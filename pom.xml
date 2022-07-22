@@ -49,5 +49,12 @@
             <artifactId>annotations</artifactId>
             <version>23.0.0</version>
         </dependency>
+
+        <!-- Automatic plugin.yml generator, based on annotations -->
+        <dependency>
+            <groupId>org.spigotmc</groupId>
+            <artifactId>plugin-annotations</artifactId>
+            <version>1.2.3-SNAPSHOT</version>
+        </dependency>
     </dependencies>
 </project>
