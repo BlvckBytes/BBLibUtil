@@ -84,7 +84,7 @@ public class TimeUtil {
    * @return Formatted duration string
    */
   public String formatDuration(long duration) {
-    return formatDuration(duration, false);
+    return formatDuration(duration, false, false);
   }
 
   /**
@@ -92,9 +92,10 @@ public class TimeUtil {
    * containing months, weeks, days, hours, minutes and seconds
    * @param duration Duration in seconds
    * @param skipSeconds Whether to skip displaying seconds
+   * @param colon Whether to use colons (:) as a separator and skip span characters
    * @return Formatted duration string
    */
-  public String formatDuration(long duration, boolean skipSeconds) {
+  public String formatDuration(long duration, boolean skipSeconds, boolean colon) {
     StringBuilder sb = new StringBuilder();
     long durS = duration;
 
@@ -120,24 +121,13 @@ public class TimeUtil {
           continue;
       }
 
-      // Append <space><quotient><span character>
-      sb.append(' ');
+      sb.append(colon ? ':' : ' ');
       sb.append(currQuot);
-      sb.append(spanC[i]);
+      sb.append(colon ? "" : spanC[i]);
     }
 
-    return sb.toString().trim();
-  }
-
-  /**
-   * Format a duration in seconds to a time string with the format
-   * of hours (two digits) colon minutes (two digits), example: 02:25
-   * @param duration Duration in seconds
-   * @return Formatted duration string
-   */
-  public String formatDurationHHCMM(long duration) {
-    long hours = duration / 3600;
-    long minutes = duration % 3600 / 60;
-    return (hours <= 9 ? "0" + hours : hours) + ":" + (minutes <= 9 ? "0" + minutes : minutes);
+    // Remove leading colon and trim whitespace, if applicable
+    String res = sb.toString().trim();
+    return res.startsWith(":") ? res.substring(1) : res;
   }
 }
