@@ -4,6 +4,7 @@ import me.blvckbytes.bblibdi.AutoConstructer;
 import me.blvckbytes.bblibutil.logger.ILogColorSupplier;
 import org.bukkit.Bukkit;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.scheduler.BukkitTask;
 
 import java.util.Optional;
 
@@ -58,27 +59,25 @@ public abstract class APlugin extends JavaPlugin implements ILogColorSupplier {
    * @param task Task to run
    * @param delay Delay to run this task in ticks
    */
-  public void runTask(Runnable task, int delay) {
+  public BukkitTask runTask(Runnable task, long delay) {
     if (disabling)
-      return;
+      return null;
 
-    if (delay == 0) {
-      Bukkit.getScheduler().runTask(this, task);
-      return;
-    }
+    if (delay == 0)
+      return Bukkit.getScheduler().runTask(this, task);
 
-    Bukkit.getScheduler().runTaskLater(this, task, delay);
+    return Bukkit.getScheduler().runTaskLater(this, task, delay);
   }
 
   /**
    * Run a task asynchronously on the next tick
    * @param task Task to run
    */
-  public void runTaskAsynchronously(Runnable task) {
+  public BukkitTask runTaskAsynchronously(Runnable task) {
     if (disabling)
-      return;
+      return null;
 
-    Bukkit.getScheduler().runTaskAsynchronously(this, task);
+    return Bukkit.getScheduler().runTaskAsynchronously(this, task);
   }
 
   @SuppressWarnings("unchecked")
