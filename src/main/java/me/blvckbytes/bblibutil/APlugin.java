@@ -55,6 +55,14 @@ public abstract class APlugin extends JavaPlugin implements ILogColorSupplier {
   }
 
   /**
+   * Run a task on the next tick always (no delay when disabling)
+   * @param task Task to run
+   */
+  public void runTaskAlways(Runnable task) {
+    runTaskAlways(task, 0);
+  }
+
+  /**
    * Run a task after a certain amount of ticks elapsed
    * @param task Task to run
    * @param delay Delay to run this task in ticks
@@ -70,6 +78,20 @@ public abstract class APlugin extends JavaPlugin implements ILogColorSupplier {
   }
 
   /**
+   * Run a task after a certain amount of ticks elapsed always (no delay when disabling)
+   * @param task Task to run
+   * @param delay Delay to run this task in ticks
+   */
+  public BukkitTask runTaskAlways(Runnable task, long delay) {
+    if (disabling) {
+      task.run();
+      return null;
+    }
+
+    return runTask(task, delay);
+  }
+
+  /**
    * Run a task asynchronously on the next tick
    * @param task Task to run
    */
@@ -78,6 +100,19 @@ public abstract class APlugin extends JavaPlugin implements ILogColorSupplier {
       return null;
 
     return Bukkit.getScheduler().runTaskAsynchronously(this, task);
+  }
+
+  /**
+   * Run a task asynchronously on the next tick always (sync no delay when disabling)
+   * @param task Task to run
+   */
+  public BukkitTask runTaskAsynchronouslyAlways(Runnable task) {
+    if (disabling) {
+      task.run();
+      return null;
+    }
+
+    return runTaskAsynchronously(task);
   }
 
   @SuppressWarnings("unchecked")
