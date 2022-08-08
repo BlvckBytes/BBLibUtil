@@ -21,6 +21,8 @@ public class InventoryUtil {
   //                                   API                                   //
   //=========================================================================//
 
+  public static final int[] EMPTY_SLOTMASK = new int[0];
+
   /**
    * Gives a player as much as possible of the provided item stack and
    * drops the remaining items at their location.
@@ -30,7 +32,7 @@ public class InventoryUtil {
    */
   public int giveItemsOrDrop(Player target, ItemStack stack) {
     // Add as much as possible into the inventory
-    int remaining = addToInventory(fromBukkit(target.getInventory()), stack);
+    int remaining = addToInventory(fromBukkit(target.getInventory()), stack, EMPTY_SLOTMASK);
     int dropped = remaining;
 
     // Done, everything fit
@@ -141,15 +143,35 @@ public class InventoryUtil {
    * return the count of items that didn't fit
    * @param target Target inventory
    * @param item Item to add
+   * @param slotMask Optional (positive) mask of slots (empty means ignored)
    * @return Number of items that didn't fit
    */
-  public int addToInventory(IInventory<?> target, ItemStack item) {
+  public int addToInventory(IInventory<?> target, ItemStack item, int[] slotMask) {
     // This number will be decremented as space is found along the way
     int remaining = item.getAmount();
     int stackSize = item.getType().getMaxStackSize();
 
     // Iterate all slots
     for (int i = 0; i < target.getSize(); i++) {
+
+      // Account for provided slot mask
+      if (slotMask.length != 0) {
+
+        // Search for matches
+        boolean anyMatch = false;
+        for (int allowedSlot : slotMask) {
+          if (allowedSlot != i)
+            continue;
+
+          anyMatch = true;
+          break;
+        }
+
+        // The current slot is not within the array of masked slots
+        if (!anyMatch)
+          continue;
+      }
+
       ItemStack stack = target.get(i);
 
       // Done, no more items remaining
