@@ -8,6 +8,10 @@ import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.Optional;
+import java.util.function.Function;
+import java.util.stream.IntStream;
+
 /*
   Author: BlvckBytes <blvckbytes@gmail.com>
   Created On: 07/23/2022
@@ -139,6 +143,44 @@ public class InventoryUtil {
   }
 
   /**
+   * Take and return the first matching ItemStack from an inventory
+   * @param target Target inventory
+   * @param predicate Matching predicate (returns how many of those items to remove, return all to null out, 0 to skip the item)
+   * @param slotMask Optional (positive) mask of slots (empty means ignored)
+   * @return First matching item which has been removed or empty if no item matched
+   */
+  public Optional<ItemStack> takeFirstMatching(IInventory<?> target, Function<ItemStack, Integer> predicate, int[] slotMask) {
+    // Iterate all slots
+    int[] slots = slotMask.length == 0 ? IntStream.range(0, target.getSize()).toArray() : slotMask;
+    for (int i : slots) {
+      ItemStack stack = target.get(i);
+
+      // Empty slot
+      if (stack == null)
+        continue;
+
+      // Item doesn't match
+      int numRemove = predicate.apply(stack);
+      if (numRemove == 0)
+        continue;
+
+      // Take all and null the slot
+      if (stack.getAmount() <= numRemove) {
+        target.set(i, null);
+        return Optional.of(stack);
+      }
+
+      // Subtract requested amount
+      stack.setAmount(stack.getAmount() - numRemove);
+      ItemStack ret = new ItemStack(stack);
+      ret.setAmount(numRemove);
+      return Optional.of(ret);
+    }
+
+    return Optional.empty();
+  }
+
+  /**
    * Add the given items to an inventory as much as possible and
    * return the count of items that didn't fit
    * @param target Target inventory
@@ -152,26 +194,8 @@ public class InventoryUtil {
     int stackSize = item.getType().getMaxStackSize();
 
     // Iterate all slots
-    for (int i = 0; i < target.getSize(); i++) {
-
-      // Account for provided slot mask
-      if (slotMask.length != 0) {
-
-        // Search for matches
-        boolean anyMatch = false;
-        for (int allowedSlot : slotMask) {
-          if (allowedSlot != i)
-            continue;
-
-          anyMatch = true;
-          break;
-        }
-
-        // The current slot is not within the array of masked slots
-        if (!anyMatch)
-          continue;
-      }
-
+    int[] slots = slotMask.length == 0 ? IntStream.range(0, target.getSize()).toArray() : slotMask;
+    for (int i : slots) {
       ItemStack stack = target.get(i);
 
       // Done, no more items remaining
