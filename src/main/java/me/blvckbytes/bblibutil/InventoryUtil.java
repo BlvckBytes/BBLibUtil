@@ -4,7 +4,9 @@ import me.blvckbytes.bblibdi.AutoConstruct;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
+import org.jetbrains.annotations.Nullable;
 
 /*
   Author: BlvckBytes <blvckbytes@gmail.com>
@@ -28,7 +30,7 @@ public class InventoryUtil {
    */
   public int giveItemsOrDrop(Player target, ItemStack stack) {
     // Add as much as possible into the inventory
-    int remaining = addToInventory(target, stack);
+    int remaining = addToInventory(fromBukkit(target.getInventory()), stack);
     int dropped = remaining;
 
     // Done, everything fit
@@ -52,26 +54,103 @@ public class InventoryUtil {
     return dropped;
   }
 
-  //=========================================================================//
-  //                                Utilities                                //
-  //=========================================================================//
+  /**
+   * Convert a bukkit inventory to the internally used abstraction
+   * @param inv Bukkit inventory
+   * @return Abstraction wrapper
+   */
+  public IInventory<Inventory> fromBukkit(Inventory inv) {
+    return new IInventory<>() {
+
+      @Override
+      public @Nullable ItemStack get(int slot) {
+        try {
+          ItemStack ret = inv.getItem(slot);
+
+          if (ret.getAmount() == 0)
+            return null;
+
+          return ret;
+        } catch (Exception e) {
+          return null;
+        }
+      }
+
+      @Override
+      public void set(int slot, @Nullable ItemStack item) {
+        try {
+          inv.setItem(slot, item);
+        } catch (Exception ignored) {}
+      }
+
+      @Override
+      public int getSize() {
+        return inv.getSize();
+      }
+
+      @Override
+      public Inventory getHandle() {
+        return inv;
+      }
+    };
+  }
 
   /**
-   * Add the given items to a player's inventory as much as possible and
+   * Convert a plain array to the internally used abstraction
+   * @param array ItemStack array
+   * @return Abstraction wrapper
+   */
+  public IInventory<ItemStack[]> fromArray(ItemStack[] array) {
+    return new IInventory<>() {
+
+      @Override
+      public @Nullable ItemStack get(int slot) {
+        try {
+          ItemStack ret = array[slot];
+
+          if (ret.getAmount() == 0)
+            return null;
+
+          return ret;
+        } catch (Exception e) {
+          return null;
+        }
+      }
+
+      @Override
+      public void set(int slot, @Nullable ItemStack item) {
+        try {
+          array[slot] = item;
+        } catch (Exception ignored) {}
+      }
+
+      @Override
+      public int getSize() {
+        return array.length;
+      }
+
+      @Override
+      public ItemStack[] getHandle() {
+        return array;
+      }
+    };
+  }
+
+  /**
+   * Add the given items to an inventory as much as possible and
    * return the count of items that didn't fit
-   * @param target Target player
+   * @param target Target inventory
    * @param item Item to add
    * @return Number of items that didn't fit
    */
-  private int addToInventory(Player target, ItemStack item) {
+  public int addToInventory(IInventory<?> target, ItemStack item) {
     // This number will be decremented as space is found along the way
     int remaining = item.getAmount();
     int stackSize = item.getType().getMaxStackSize();
 
     // Iterate all slots
-    ItemStack[] contents = target.getInventory().getStorageContents();
-    for (int i = 0; i < contents.length; i++) {
-      ItemStack stack = contents[i];
+    for (int i = 0; i < target.getSize(); i++) {
+      ItemStack stack = target.get(i);
 
       // Done, no more items remaining
       if (remaining < 0)
@@ -85,7 +164,7 @@ public class InventoryUtil {
         int num = Math.min(remaining, stackSize);
         remItems.setAmount(num);
 
-        target.getInventory().setItem(i, remItems);
+        target.set(i, remItems);
         remaining -= num;
         continue;
       }
