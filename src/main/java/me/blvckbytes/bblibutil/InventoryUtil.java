@@ -199,6 +199,7 @@ public class InventoryUtil {
     // At first, only store planned partitions using the format <Slot, Amount>
     // and execute them all at once at the end, to have a transaction-like behavior
     List<Tuple<Integer, Integer>> partitions = new ArrayList<>();
+    List<Integer> vacant = new ArrayList<>();
 
     // Iterate all slots
     int[] slots = slotMask.length == 0 ? IntStream.range(0, target.getSize()).toArray() : slotMask;
@@ -211,12 +212,7 @@ public class InventoryUtil {
 
       // Completely vacant slot
       if (stack == null || stack.getType() == Material.AIR) {
-
-        // Set as many items as possible or as many as remain
-        int num = Math.min(remaining, stackSize);
-
-        partitions.add(new Tuple<>(i, num));
-        remaining -= num;
+        vacant.add(i);
         continue;
       }
 
@@ -239,6 +235,19 @@ public class InventoryUtil {
       // Set to a full stack and subtract the delta from remaining
       partitions.add(new Tuple<>(i, stackSize));
       remaining -= usable;
+    }
+
+    // If there are still items remaining, start using vacant slots
+    if (remaining > 0 && vacant.size() > 0) {
+      for (int v : vacant) {
+        if (remaining <= 0)
+          break;
+
+        // Set as many items as possible or as many as remain
+        int num = Math.min(remaining, stackSize);
+        partitions.add(new Tuple<>(v, num));
+        remaining -= num;
+      }
     }
 
     // Requested all or nothing, didn't fit completely
