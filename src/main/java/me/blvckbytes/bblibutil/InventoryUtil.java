@@ -55,7 +55,7 @@ public class InventoryUtil {
     while (remaining > 0) {
       ItemStack items = stack.clone();
       items.setAmount(Math.min(remaining, stackSize));
-      w.dropItemNaturally(target.getEyeLocation(), items);
+      w.dropItem(target.getEyeLocation(), items);
       remaining -= items.getAmount();
     }
 
