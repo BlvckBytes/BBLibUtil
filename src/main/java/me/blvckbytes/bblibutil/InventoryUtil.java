@@ -8,6 +8,8 @@ import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.IntStream;
@@ -36,7 +38,7 @@ public class InventoryUtil {
    */
   public int giveItemsOrDrop(Player target, ItemStack stack) {
     // Add as much as possible into the inventory
-    int remaining = addToInventory(fromBukkit(target.getInventory()), stack, EMPTY_SLOTMASK);
+    int remaining = addToInventory(fromBukkit(target.getInventory()), stack, EMPTY_SLOTMASK, false);
     int dropped = remaining;
 
     // Done, everything fit
@@ -186,12 +188,17 @@ public class InventoryUtil {
    * @param target Target inventory
    * @param item Item to add
    * @param slotMask Optional (positive) mask of slots (empty means ignored)
+   * @param allOrNothing Whether all items need to fit, if true, it's either all or none and no inbetween
    * @return Number of items that didn't fit
    */
-  public int addToInventory(IInventory<?> target, ItemStack item, int[] slotMask) {
+  public int addToInventory(IInventory<?> target, ItemStack item, int[] slotMask, boolean allOrNothing) {
     // This number will be decremented as space is found along the way
     int remaining = item.getAmount();
     int stackSize = item.getType().getMaxStackSize();
+
+    // At first, only store planned partitions using the format <Slot, Amount>
+    // and execute them all at once at the end, to have a transaction-like behavior
+    List<Tuple<Integer, Integer>> partitions = new ArrayList<>();
 
     // Iterate all slots
     int[] slots = slotMask.length == 0 ? IntStream.range(0, target.getSize()).toArray() : slotMask;
@@ -204,13 +211,11 @@ public class InventoryUtil {
 
       // Completely vacant slot
       if (stack == null || stack.getType() == Material.AIR) {
-        ItemStack remItems = item.clone();
 
         // Set as many items as possible or as many as remain
         int num = Math.min(remaining, stackSize);
-        remItems.setAmount(num);
 
-        target.set(i, remItems);
+        partitions.add(new Tuple<>(i, num));
         remaining -= num;
         continue;
       }
@@ -226,14 +231,34 @@ public class InventoryUtil {
 
       // Add the last few remaining items, done
       if (usable >= remaining) {
-        stack.setAmount(stack.getAmount() + remaining);
+        partitions.add(new Tuple<>(i, stack.getAmount() + remaining));
         remaining = 0;
         break;
       }
 
       // Set to a full stack and subtract the delta from remaining
-      stack.setAmount(stackSize);
+      partitions.add(new Tuple<>(i, stackSize));
       remaining -= usable;
+    }
+
+    // Requested all or nothing, didn't fit completely
+    if (allOrNothing && remaining > 0)
+      return item.getAmount();
+
+    // Apply partitions to inventory
+    for (Tuple<Integer, Integer> partition : partitions) {
+      ItemStack curr = target.get(partition.getA());
+
+      // Slot empty, create new item
+      if (curr == null) {
+        curr = item.clone();
+        curr.setAmount(partition.getB());
+        target.set(partition.getA(), curr);
+        continue;
+      }
+
+      // Update existing slot
+      curr.setAmount(partition.getB());
     }
 
     // Return remaining items that didn't fit
