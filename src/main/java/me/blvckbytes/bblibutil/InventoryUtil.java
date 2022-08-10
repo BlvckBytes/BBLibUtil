@@ -91,7 +91,7 @@ public class InventoryUtil {
 
       @Override
       public int getSize() {
-        return inv.getSize();
+        return inv.getStorageContents().length;
       }
 
       @Override
