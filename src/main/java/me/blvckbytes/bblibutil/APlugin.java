@@ -43,6 +43,7 @@ public abstract class APlugin extends JavaPlugin implements ILogColorSupplier {
     try {
       // Create all resources within this package
       ac = new AutoConstructer(this);
+      ac.execute();
     } catch (Exception e) {
       e.printStackTrace();
       // Disable this plugin if it didn't pass auto-construct
