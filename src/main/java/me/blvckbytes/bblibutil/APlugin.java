@@ -1,6 +1,7 @@
 package me.blvckbytes.bblibutil;
 
 import me.blvckbytes.bblibdi.AutoConstructer;
+import me.blvckbytes.bblibutil.logger.ConsoleSenderLogger;
 import me.blvckbytes.bblibutil.logger.ILogColorSupplier;
 import org.bukkit.Bukkit;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -45,8 +46,13 @@ public abstract class APlugin extends JavaPlugin implements ILogColorSupplier {
       ac = new AutoConstructer(this);
       ac.execute();
     } catch (Exception e) {
-      e.printStackTrace();
+      // Create an emergency instance of the console logger
+      // in order to be able to log in standardized format
+      ConsoleSenderLogger emergencyLogger = new ConsoleSenderLogger(this, this);
+      emergencyLogger.logError(e);
+
       // Disable this plugin if it didn't pass auto-construct
+      emergencyLogger.logError("Couldn't initialize an internal module, shutting down!");
       Bukkit.getPluginManager().disablePlugin(this);
     }
   }
